@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+
+import re
+import sys
+
+import nbformat
+from nbformat.v4 import new_notebook, new_code_cell, new_markdown_cell
+
+
+def main(argv):
+    nb = new_notebook()
+    with open(argv[1], 'r') as f:
+        text = f.read().split('\n')
+
+        line = None
+        for i in range(len(text)):
+            prev_line = line
+            line = text[i]
+
+            if possible_code_cell(line):
+                cell_lines, incr = get_code_cell(text[i:])
+                if incr > 0:
+                    nb.cells.append(new_code_cell('\n'.join(cell_lines).strip()))
+                i += incr
+                continue
+
+            if possible_markdown_cell(prev_line, line):
+                cell_lines, incr = get_markdown_cell(text[i:])
+                if incr > 0:
+                    nb.cells.append(new_markdown_cell('\n'.join(cell_lines).strip()))
+                i += incr
+    nbformat.write(nb, argv[1]+'.ipynb')
+
+
+def get_code_cell(text):
+    cell_text = []
+
+    line = None
+    for i in range(1, len(text)):
+        prev_line = line
+        line = text[i]
+
+        if possible_code_cell(line):
+            break
+
+        if possible_markdown_cell(prev_line, line):
+            _, incr = get_markdown_cell(text[i:])
+            if incr > 0:
+                break
+        cell_text.append(line)
+    return (cell_text, i-1)
+
+
+def get_markdown_cell(text):
+    cell_text = []
+
+    for i in range(len(text)):
+        line = text[i]
+        if not re.match('^\#', line):
+            if not re.match('^\s*$', line):
+                return ([], 0)
+            return (cell_text, i)
+        cell_text.append(line.lstrip('#').strip())
+
+
+def possible_code_cell(line):
+    return re.match('^\# In\[.*\]', line)
+
+
+def possible_markdown_cell(prev_line, line):
+    return prev_line is not None and re.match('^\s*$', prev_line) and re.match('^\# ', line)
+
+
+if __name__ == "__main__":
+    main(sys.argv)
