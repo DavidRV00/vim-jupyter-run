@@ -1,6 +1,6 @@
 " Editing like a notebook and running in a REPL
 function! StartAndConfigIPython()
-  let g:jupyterrun_buf_configured[expand('%')] = 1
+  let g:jupyterrun_buf_configured[expand('%:p')] = 1
 
   " Enable clearing only after Slimux is configured
   nnoremap <buffer> <localleader>c :call SlimuxSendCode("clear\n")<cr>
@@ -42,7 +42,7 @@ command! PrevCellOrFirst call PrevCellOrFirst()
 
 
 function! RunCell()
-  if g:jupyterrun_buf_configured[expand('%')] == 0
+  if g:jupyterrun_buf_configured[expand('%:p')] == 0
     call StartAndConfigIPython()
   endif
   if search("^# In\\[.*\\]", "bcW") == 0
@@ -95,7 +95,7 @@ command! RunAllCells call RunAllCells()
 function! JupyterSync()
   " Don't want to use regular old 'silent execute...' here because it still
   " clears the screen and looks bad.
-  Dispatch! make_nb % && jupyter trust %.ipynb && jupyter nbconvert --to python %.ipynb --output %
+  Dispatch! make_nb %:p && jupyter trust %:p.ipynb && jupyter nbconvert --to python %:p.ipynb --output %:p
 endfunction
 command! JupyterSync call JupyterSync()
 
@@ -126,8 +126,8 @@ function! SetJupyterRunSettings()
   if !exists("g:jupyterrun_buf_configured")
     let g:jupyterrun_buf_configured = {}
   endif
-  if !exists("g:jupyterrun_buf_configured[expand('%')]")
-    let g:jupyterrun_buf_configured[expand('%')] = 0
+  if !exists("g:jupyterrun_buf_configured[expand('%:p')]")
+    let g:jupyterrun_buf_configured[expand('%:p')] = 0
   endif
 endfunction
 
