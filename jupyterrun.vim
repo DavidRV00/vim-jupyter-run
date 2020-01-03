@@ -6,8 +6,8 @@ function! StartAndConfigREPL()
     " Enable clearing only after Slimux is configured
     nnoremap <buffer> <localleader>c :call SlimuxSendCode("system(\"clear\")\n")<cr>
 
-    " Starting radian in this special way unprocessed input does not get visibly printed
-    " before earlier outputs have been printed.
+    " Starting radian in this special way makes it so that unprocessed input does not get
+    " visibly printed before earlier outputs have been printed.
     call SlimuxSendCode("stty -echo; radian; stty echo;\n\n")
 
     return
@@ -113,7 +113,7 @@ command! JupyterSync call JupyterSync()
 
 function! AutoJupyterSyncOn()
   augroup autojupytersyncon
-    autocmd BufWritePre *.py,*.r call JupyterSync()
+    autocmd BufWritePre <buffer> call JupyterSync()
   augroup END
 endfunction
 command! AutoJupyterSyncOn call AutoJupyterSyncOn()
@@ -136,7 +136,7 @@ command! RmdSync call RmdSync()
 
 function! AutoRmdSyncOn()
   augroup autormdsyncon
-    autocmd BufWritePre *.py,*.r call RmdSync()
+    autocmd BufWritePre <buffer> call RmdSync()
   augroup END
 endfunction
 command! AutoRmdSyncOn call AutoRmdSyncOn()
