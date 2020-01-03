@@ -2,34 +2,78 @@
 
 import re
 import sys
-
+from enum import Enum
 import nbformat
 from nbformat.v4 import new_notebook, new_code_cell, new_markdown_cell
 
 
+class CellType(Enum):
+    CODE = 1
+    MARKDOWN = 2
+
+
 def main(argv):
-    nb = new_notebook()
+    cells = []
     with open(argv[1], 'r') as f:
         text = f.read().split('\n')
 
-        line = None
-        for i in range(len(text)):
-            prev_line = line
-            line = text[i]
+    line = None
+    for i in range(len(text)):
+        prev_line = line
+        line = text[i]
 
-            if possible_code_cell(line):
-                cell_lines, incr = get_code_cell(text[i:])
-                if incr > 0:
-                    nb.cells.append(new_code_cell('\n'.join(cell_lines).strip()))
-                i += incr
+        if possible_code_cell(line):
+            cell_lines, incr = get_code_cell(text[i:])
+            if incr > 0:
+                cells.append(('\n'.join(cell_lines).strip(), CellType.CODE))
+            i += incr
+            continue
+
+        if possible_markdown_cell(prev_line, line):
+            cell_lines, incr = get_markdown_cell(text[i:])
+            if incr > 0:
+                cells.append(('\n'.join(cell_lines).strip(), CellType.MARKDOWN))
+            i += incr
+
+    if len(argv) == 2 or '--ipynb' in argv[2:]:
+        make_nb(cells, argv[1])
+    if len(argv) > 2 and '--rmd' in argv[2:]:
+        make_rmd(cells, argv[1])
+
+
+def make_nb(cells, name):
+    nb = new_notebook()
+
+    if re.match('.+\.py$', name):
+        nb.metadata["kernelspec"] = {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3"
+        }
+    elif re.match('.+\.r$', name) or re.match('.+\.R$', name):
+        nb.metadata["kernelspec"] = {
+            "display_name": "R",
+            "language": "R",
+            "name": "ir"
+        }
+
+    for c in cells:
+        if c[1] is CellType.CODE:
+            nb.cells.append(new_code_cell(c[0]))
+            continue
+        nb.cells.append(new_markdown_cell(c[0]))
+    nbformat.write(nb, name+'.ipynb')
+
+
+def make_rmd(cells, name):
+    with open(name+'.Rmd', 'w') as f:
+        for c in cells:
+            if c[1] is CellType.CODE:
+                f.write('```{r}\n')
+                f.write(c[0] + '\n')
+                f.write('```\n\n')
                 continue
-
-            if possible_markdown_cell(prev_line, line):
-                cell_lines, incr = get_markdown_cell(text[i:])
-                if incr > 0:
-                    nb.cells.append(new_markdown_cell('\n'.join(cell_lines).strip()))
-                i += incr
-    nbformat.write(nb, argv[1]+'.ipynb')
+            f.write(c[0] + '\n\n')
 
 
 def get_code_cell(text):
@@ -56,11 +100,11 @@ def get_markdown_cell(text):
 
     for i in range(len(text)):
         line = text[i]
-        if not re.match('^\#', line):
+        if not re.match('^\# ', line):
             if not re.match('^\s*$', line):
                 return ([], 0)
             return (cell_text, i)
-        cell_text.append(line.lstrip('#').strip())
+        cell_text.append(re.sub(r'^\# ', "", line))
 
 
 def possible_code_cell(line):

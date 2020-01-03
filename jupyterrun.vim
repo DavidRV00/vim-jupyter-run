@@ -1,6 +1,17 @@
 " Editing like a notebook and running in a REPL
-function! StartAndConfigIPython()
+function! StartAndConfigREPL()
   let g:jupyterrun_buf_configured[expand('%:p')] = 1
+
+  if expand('%:e') == "r" || expand('%:e') == "R"
+    " Enable clearing only after Slimux is configured
+    nnoremap <buffer> <localleader>c :call SlimuxSendCode("system(\"clear\")\n")<cr>
+
+    " Starting radian in this special way unprocessed input does not get visibly printed
+    " before earlier outputs have been printed.
+    call SlimuxSendCode("stty -echo; radian; stty echo;\n\n")
+
+    return
+  endif
 
   " Enable clearing only after Slimux is configured
   nnoremap <buffer> <localleader>c :call SlimuxSendCode("clear\n")<cr>
@@ -10,7 +21,7 @@ function! StartAndConfigIPython()
   " * Ipython's auto-indent doesn't mess up the indentation in our file.
   call SlimuxSendCode("stty -echo; ipython --no-autoindent; stty echo;\n\n")
 endfunction
-command! StartAndConfigIPython call StartAndConfigIPython()
+command! StartAndConfigREPL call StartAndConfigREPL()
 
 
 function! EndOfCellOrEnd()
@@ -43,7 +54,7 @@ command! PrevCellOrFirst call PrevCellOrFirst()
 
 function! RunCell()
   if g:jupyterrun_buf_configured[expand('%:p')] == 0
-    call StartAndConfigIPython()
+    call StartAndConfigREPL()
   endif
   if search("^# In\\[.*\\]", "bcW") == 0
     return NextCellOrEnd()
@@ -95,7 +106,7 @@ command! RunAllCells call RunAllCells()
 function! JupyterSync()
   " Don't want to use regular old 'silent execute...' here because it still
   " clears the screen and looks bad.
-  Dispatch! make_nb %:p && jupyter trust %:p.ipynb && jupyter nbconvert --to python %:p.ipynb --output %:p
+  Dispatch! jupytersync %:p
 endfunction
 command! JupyterSync call JupyterSync()
 
@@ -112,6 +123,29 @@ function! AutoJupyterSyncOff()
   autocmd! autojupytersyncon
 endfunction
 command! AutoJupyterSyncOff call AutoJupyterSyncOff()
+
+
+" Syncing with Rmd file
+function! RmdSync()
+  " Don't want to use regular old 'silent execute...' here because it still
+  " clears the screen and looks bad.
+  Dispatch! make_nb %:p --rmd
+endfunction
+command! RmdSync call RmdSync()
+
+
+function! AutoRmdSyncOn()
+  augroup autormdsyncon
+    autocmd BufWritePre *.py,*.r call RmdSync()
+  augroup END
+endfunction
+command! AutoRmdSyncOn call AutoRmdSyncOn()
+
+
+function! AutoRmdSyncOff()
+  autocmd! autormdsyncon
+endfunction
+command! AutoRmdSyncOff call AutoRmdSyncOff()
 
 
 " Mappings, settings...

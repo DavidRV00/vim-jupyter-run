@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Warning: Terrible hack to make it do R files. Sorry.
+
+filename=$(basename -- "$1")
+extension="${filename##*.}"
+
+runner="python"
+if [ "$extension" == "r" ] || [ "$extension" == "R" ]; then
+  runner="Rscript"
+fi
+
+make_nb $1 --ipynb && \
+jupyter trust $1.ipynb && \
+jupyter nbconvert --to python $1.ipynb --output $1 --Exporter.file_extension=".$extension" && \
+sed -i "1s/.*/#!\/usr\/bin\/env $runner/" $1
