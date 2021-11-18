@@ -100,11 +100,13 @@ def get_markdown_cell(text):
 
     for i in range(len(text)):
         line = text[i]
-        if not re.match('^\# ', line):
+        if not (re.match('^\# ', line) or re.match('^\#$', line)):
             if not re.match('^\s*$', line):
                 return ([], 0)
             return (cell_text, i)
-        cell_text.append(re.sub(r'^\# ', "", line))
+        line = re.sub(r'^\# ', "", line)
+        line = re.sub(r'^\#$', "", line)
+        cell_text.append(line)
 
 
 def possible_code_cell(line):

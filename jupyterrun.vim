@@ -15,6 +15,7 @@ function! StartAndConfigREPL()
 
   " Enable clearing only after Slimux is configured
   nnoremap <buffer> <localleader>c :call SlimuxSendCode("clear\n")<cr>
+  inoremap <buffer> <localleader>c <esc>:call SlimuxSendCode("clear\n")<cr>
 
   " Starting ipython in this special way fixes two problems:
   " * Unprocessed input does not get visibly printed before earlier outputs have been printed.
@@ -39,7 +40,7 @@ function! NextCellOrEnd()
   if EndOfCellOrEnd() == 0
     return 0
   endif
-  normal! j
+  normal! jj
   return 1
 endfunction
 command! NextCellOrEnd call NextCellOrEnd()
@@ -71,18 +72,20 @@ command! RunCell call RunCell()
 
 function! InsertCellAfter()
   call EndOfCellOrEnd()
-  execute "normal! o# In[ ]:\<cr>\<cr>\<cr>\<cr>\<cr>"
-  normal! kk
+  execute "normal! o\<esc>i# In[ ]:$\<cr>"
+  "normal! kk
+  startinsert
 endfunction
 command! InsertCellAfter call InsertCellAfter()
 
 
 function! RunCellAndAppend()
   if EndOfCellOrEnd() == 0
+    call RunCell()
     call InsertCellAfter()
-    call PrevCellOrFirst()
+  else
+    call RunCell()
   endif
-  call RunCell()
 endfunction
 command! RunCellAndAppend call RunCellAndAppend()
 
@@ -97,6 +100,7 @@ command! RunCellAndBelow call RunCellAndBelow()
 function! RunAllCells()
   normal! gg
   call NextCellOrEnd()
+  call PrevCellOrFirst()
   call RunCellAndBelow()
 endfunction
 command! RunAllCells call RunAllCells()
@@ -153,6 +157,10 @@ function! SetJupyterRunSettings()
   nnoremap <buffer> <localleader><Enter> :RunCellAndAppend<cr>
   nnoremap <buffer> <localleader>b<Enter> :RunCellAndBelow<cr>
   nnoremap <buffer> <localleader>a<Enter> :RunAllCells<cr>
+
+  inoremap <buffer> <localleader><Enter> <esc>:RunCellAndAppend<cr>
+  inoremap <buffer> <localleader>b<Enter> <esc>:RunCellAndBelow<cr>
+  inoremap <buffer> <localleader>a<Enter> <esc>:RunAllCells<cr>
 
   " We need to use a global map instead of a buffer-local variable because
   " when the file gets rewritten during notebook sync, the buffer-local

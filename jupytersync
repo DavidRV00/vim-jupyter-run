@@ -13,4 +13,5 @@ fi
 make_nb $1 --ipynb && \
 jupyter trust $1.ipynb && \
 jupyter nbconvert --to python $1.ipynb --output $1 --Exporter.file_extension=".$extension" && \
-sed -i "1s/.*/#!\/usr\/bin\/env $runner/" $1
+sed -i "1s/.*/#!\/usr\/bin\/env $runner/" $1 && \
+sed -i '$!N;/^\n$/{$q;D;};P;D;' $1 # Condense consecutive empty lines
